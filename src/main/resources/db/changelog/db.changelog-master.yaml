@@ -1,0 +1,898 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-warehouse-layouts
+      author: codex
+      changes:
+        - createTable:
+            tableName: warehouse_layouts
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: width
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: height
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: layout_json
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: warehouse_layouts
+            columnNames: tenant_id, agency_id
+            constraintName: uq_warehouse_layouts_tenant_agency
+        - createIndex:
+            tableName: warehouse_layouts
+            indexName: ix_warehouse_layouts_tenant
+            columns:
+              - column:
+                  name: tenant_id
+
+  - changeSet:
+      id: 002-create-product-locations
+      author: codex
+      changes:
+        - createTable:
+            tableName: product_locations
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bin_code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: product_locations
+            columnNames: tenant_id, agency_id, product_id
+            constraintName: uq_product_locations_tenant_agency_product
+        - createIndex:
+            tableName: product_locations
+            indexName: ix_product_locations_tenant_product
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: product_id
+
+  - changeSet:
+      id: 003-create-location-policies
+      author: codex
+      changes:
+        - createTable:
+            tableName: location_policies
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: bin_code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+              - column:
+                  name: min_qty
+                  type: INT
+              - column:
+                  name: max_qty
+                  type: INT
+              - column:
+                  name: safety_stock
+                  type: INT
+              - column:
+                  name: reorder_point
+                  type: INT
+              - column:
+                  name: cycle_count_days
+                  type: INT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: location_policies
+            indexName: ix_location_policies_tenant_agency
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: agency_id
+        # Postgres UNIQUE constraints treat NULLs as distinct.
+        # Use partial unique indexes to ensure a single "generic" policy per (tenant, agency, bin_code)
+        # and a single product-specific policy per (tenant, agency, bin_code, product_id).
+        - sql:
+            dbms: postgresql
+            splitStatements: true
+            stripComments: true
+            sql: |
+              CREATE UNIQUE INDEX IF NOT EXISTS uq_location_policies_generic
+              ON location_policies(tenant_id, agency_id, bin_code)
+              WHERE product_id IS NULL;
+              
+              CREATE UNIQUE INDEX IF NOT EXISTS uq_location_policies_product
+              ON location_policies(tenant_id, agency_id, bin_code, product_id)
+              WHERE product_id IS NOT NULL;
+
+  - changeSet:
+      id: 004-create-reservations
+      author: codex
+      changes:
+        - createTable:
+            tableName: reservations
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reference_type
+                  type: VARCHAR(32)
+              - column:
+                  name: reference_id
+                  type: VARCHAR(64)
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_by
+                  type: VARCHAR(128)
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: reservations
+            indexName: ix_reservations_tenant_agency_product_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: agency_id
+              - column:
+                  name: product_id
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 005-create-suppliers
+      author: codex
+      changes:
+        - createTable:
+            tableName: suppliers
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(256)
+              - column:
+                  name: phone
+                  type: VARCHAR(64)
+              - column:
+                  name: address
+                  type: TEXT
+              - column:
+                  name: notes
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: suppliers
+            indexName: ix_suppliers_tenant
+            columns:
+              - column:
+                  name: tenant_id
+
+  - changeSet:
+      id: 006-create-supplier-products
+      author: codex
+      changes:
+        - createTable:
+            tableName: supplier_products
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: supplier_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lead_time_days
+                  type: INT
+              - column:
+                  name: moq
+                  type: INT
+              - column:
+                  name: preferred
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: NUMERIC(14,2)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: supplier_products
+            baseColumnNames: supplier_id
+            referencedTableName: suppliers
+            referencedColumnNames: id
+            constraintName: fk_supplier_products_supplier
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: supplier_products
+            columnNames: tenant_id, supplier_id, product_id
+            constraintName: uq_supplier_products_tenant_supplier_product
+        - createIndex:
+            tableName: supplier_products
+            indexName: ix_supplier_products_tenant_product
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: product_id
+
+  - changeSet:
+      id: 007-create-analytics-recommendations
+      author: codex
+      changes:
+        - createTable:
+            tableName: analytics_recommendations
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: avg_daily_usage
+                  type: NUMERIC(14,4)
+              - column:
+                  name: days_of_cover
+                  type: NUMERIC(14,4)
+              - column:
+                  name: abc_class
+                  type: VARCHAR(1)
+              - column:
+                  name: stockout_risk
+                  type: NUMERIC(5,4)
+              - column:
+                  name: suggested_reorder_qty
+                  type: INT
+              - column:
+                  name: computed_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: analytics_recommendations
+            columnNames: tenant_id, agency_id, product_id
+            constraintName: uq_analytics_reco_tenant_agency_product
+        - createIndex:
+            tableName: analytics_recommendations
+            indexName: ix_analytics_reco_tenant_agency
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: agency_id
+
+  - changeSet:
+      id: 008-create-workflow-requests
+      author: codex
+      changes:
+        - createTable:
+            tableName: workflow_requests
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: requested_by
+                  type: VARCHAR(128)
+              - column:
+                  name: approved_by
+                  type: VARCHAR(128)
+              - column:
+                  name: approved_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: payload_json
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: workflow_requests
+            indexName: ix_workflow_requests_tenant_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 009-create-material-operations
+      author: codex
+      changes:
+        - createTable:
+            tableName: departments
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: departments
+            columnNames: tenant_id, agency_id, code
+            constraintName: uq_departments_tenant_agency_code
+        - createIndex:
+            tableName: departments
+            indexName: ix_departments_tenant_agency
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: agency_id
+
+        - createTable:
+            tableName: material_requests
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agency_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: department_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason_code
+                  type: VARCHAR(64)
+              - column:
+                  name: reason_text
+                  type: TEXT
+              - column:
+                  name: requested_by
+                  type: VARCHAR(128)
+              - column:
+                  name: approved_by
+                  type: VARCHAR(128)
+              - column:
+                  name: approved_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: issued_by
+                  type: VARCHAR(128)
+              - column:
+                  name: issued_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: expected_return_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: closed_by
+                  type: VARCHAR(128)
+              - column:
+                  name: closed_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: close_reason
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: material_requests
+            baseColumnNames: department_id
+            referencedTableName: departments
+            referencedColumnNames: id
+            constraintName: fk_material_requests_department
+            onDelete: RESTRICT
+        - createIndex:
+            tableName: material_requests
+            indexName: ix_material_requests_tenant_agency_status
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: agency_id
+              - column:
+                  name: status
+        - createIndex:
+            tableName: material_requests
+            indexName: ix_material_requests_tenant_department
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: department_id
+
+        - createTable:
+            tableName: material_request_items
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: request_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity_requested
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity_issued
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity_returned
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: note
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: material_request_items
+            baseColumnNames: request_id
+            referencedTableName: material_requests
+            referencedColumnNames: id
+            constraintName: fk_material_request_items_request
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: material_request_items
+            columnNames: request_id, product_id
+            constraintName: uq_material_request_items_request_product
+        - createIndex:
+            tableName: material_request_items
+            indexName: ix_material_request_items_tenant_product
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: product_id
+
+        - createTable:
+            tableName: trace_events
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_type
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: entity_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: actor_id
+                  type: VARCHAR(128)
+              - column:
+                  name: agency_id
+                  type: UUID
+              - column:
+                  name: department_id
+                  type: UUID
+              - column:
+                  name: payload_json
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: trace_events
+            indexName: ix_trace_events_tenant_entity_created
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: entity_type
+              - column:
+                  name: entity_id
+              - column:
+                  name: created_at
+        - createIndex:
+            tableName: trace_events
+            indexName: ix_trace_events_tenant_agency_created
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: agency_id
+              - column:
+                  name: created_at
+
+  - changeSet:
+      id: 010-create-department-members
+      author: codex
+      changes:
+        - createTable:
+            tableName: department_members
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: tenant_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: department_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: VARCHAR(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: department_members
+            baseColumnNames: department_id
+            referencedTableName: departments
+            referencedColumnNames: id
+            constraintName: fk_department_members_department
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: department_members
+            columnNames: tenant_id, department_id, user_id
+            constraintName: uq_department_members_tenant_department_user
+        - createIndex:
+            tableName: department_members
+            indexName: ix_department_members_tenant_department
+            columns:
+              - column:
+                  name: tenant_id
+              - column:
+                  name: department_id
