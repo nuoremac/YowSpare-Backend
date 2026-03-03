@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: comops-core-api
+    env: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DB_URL_JDBC
+        value: "jdbc:postgresql://rt-comops-comops.h.aivencloud.com:11772/defaultdb?sslmode=require"
+      - key: DB_URL_R2DBC
+        value: "r2dbc:postgresql://rt-comops-comops.h.aivencloud.com:11772/defaultdb?ssl=true"
+      - key: DB_USER
+        fromSecret: true
+      - key: DB_PASSWORD
+        fromSecret: true
+      - key: REDIS_URL
+        fromSecret: true
+      - key: JWT_SECRET
+        fromSecret: true
+      - key: CORE_API_URL
+        fromSecret: true
+      - key: AUTH_CACHE_TTL
+        fromSecret: true

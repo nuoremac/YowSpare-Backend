@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/001-product-catalog.sql
+  - include:
+      file: db/changelog/002-stock-levels.sql
+  - include:
+      file: db/changelog/003-stock-movements.sql
+  - include:
+      file: db/changelog/004-inventory-sessions.sql
+  - include:
+      file: db/changelog/005-manufacturing.sql
