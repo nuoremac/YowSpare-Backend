@@ -26,10 +26,10 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
 # Copie uniquement le JAR final depuis le stage de build
-COPY --from=build /app/target/core-api-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/stock-api-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose le port sur lequel l'application s'exécute
-EXPOSE 8080
+EXPOSE 8081
 
 # Commande pour lancer l'application au démarrage du conteneur
 ENTRYPOINT ["java", "-jar", "app.jar"]
