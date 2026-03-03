@@ -32,4 +32,5 @@ COPY --from=build /app/target/stock-api-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8081
 
 # Commande pour lancer l'application au démarrage du conteneur
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Render impose un PORT dynamique via la variable d'environnement PORT.
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8081} -jar app.jar"]
