@@ -1,0 +1,216 @@
+services:
+  # ==========================
+  # PostgreSQL
+  # ==========================
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_DB: yowyob_erp
+      POSTGRES_USER: yowyob_admin
+      POSTGRES_PASSWORD: yowyob_secret
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - yowyob-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U yowyob_admin -d yowyob_erp" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # ==========================
+  # Elasticsearch
+  # ==========================
+  elasticsearch:
+    image: elasticsearch:8.11.1
+    hostname: elasticsearch
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - yowyob-network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    restart: unless-stopped
+
+  # ==========================
+  # Zookeeper
+  # ==========================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_HEAP_OPTS: "-Xmx1G -Xms1G"
+    mem_limit: 1500m
+    mem_reservation: 512m
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "2181" ]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+    networks:
+      - yowyob-network
+    restart: unless-stopped
+
+  # ==========================
+  # Kafka
+  # ==========================
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_KRAFT_MODE_ENABLED: "false"
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+    networks:
+      - yowyob-network
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ==========================
+  # Redis
+  # ==========================
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6380:6379"
+    command: redis-server --bind 0.0.0.0 --requirepass azaleodel --port 6379
+    volumes:
+      - redis-data:/data
+    networks:
+      - yowyob-network
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a azaleodel -p 6379 ping | grep -q PONG" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ==========================
+  # Kafka UI
+  # ==========================
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - yowyob-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ==========================
+  # Yowyob ERP Backend (Spring Boot)
+  # ==========================
+  yowyob-erp-backend:
+    build:
+      context: .
+    container_name: yowyob-erp-backend
+    ports:
+      - "8081:8081"
+    volumes:
+      - ~/.m2:/root/.m2
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      spring.datasource.url: jdbc:postgresql://postgres:5432/yowyob_erp
+      spring.datasource.username: yowyob_admin
+      spring.datasource.password: yowyob_secret
+      spring.datasource.driver-class-name: org.postgresql.Driver
+      spring.r2dbc.url: r2dbc:postgresql://postgres:5432/yowyob_erp
+      spring.r2dbc.username: yowyob_admin
+      spring.r2dbc.password: yowyob_secret
+      spring.data.redis.host: redis
+      spring.data.redis.port: 6379
+      spring.data.redis.password: azaleodel
+      spring.kafka.bootstrap-servers: kafka:9092
+      spring.jpa.hibernate.ddl-auto: none
+      spring.liquibase.enabled: "true"
+      spring.liquibase.change-log: classpath:db/changelog/db.changelog-master.xml
+      spring.kafka.producer.transaction-id-prefix: yowyob-erp-tx-
+    depends_on:
+      postgres:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yowyob-network
+    restart: unless-stopped
+
+# ==========================
+# Volumes
+# ==========================
+volumes:
+  postgres-data:
+  es-data:
+  redis-data:
+  zookeeper-data:
+  zookeeper-log:
+
+# ==========================
+# Network
+# ==========================
+networks:
+  yowyob-network:
+    driver: bridge

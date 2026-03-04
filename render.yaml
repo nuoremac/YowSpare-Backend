@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: yowyob-erp-backend
+    runtime: docker
+    plan: free
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Liquibase config
+      - key: SPRING_LIQUIBASE_CHANGE_LOG
+        value: classpath:db/changelog/db.changelog-master.xml
+      
+      # --- POSTGRESQL (Auto-provisioned) ---
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - key: DB_HOST
+        fromDatabase:
+          name: yowyob-erp-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: yowyob-erp-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: yowyob-erp-db
+          property: database
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: yowyob-erp-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: yowyob-erp-db
+          property: password
+
+      # --- REDIS (Disabled or External) ---
+      # Si vous ajoutez un Redis sur Render, décommentez et remplissez :
+      # - key: SPRING_DATA_REDIS_HOST
+      #   value: red-xxxxxxxx
+      # - key: SPRING_DATA_REDIS_PORT
+      #   value: "6379"
+
+      # --- KAFKA & ELASTIC (Disabled by default for cost/simplicity) ---
+      - key: SPRING_KAFKA_ENABLED
+        value: "false" 
+      - key: SPRING_ELASTICSEARCH_ENABLED
+        value: "false"
+      # Elastic require external service or can be ignored if not critical on startup
+      - key: SPRING_ELASTICSEARCH_URIS
+        value: ""
+
+databases:
+  - name: yowyob-erp-db
+    plan: free
+    databaseName: yowyob_erp
+    user: yowyob_admin

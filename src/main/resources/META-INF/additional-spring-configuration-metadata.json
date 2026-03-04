@@ -1,0 +1,77 @@
+{"properties": [
+  {
+    "name": "========\n\nmanagement.endpoints.web.exposu",
+    "type": "java.lang.String",
+    "description": "A description for '========\n\nmanagement.endpoints.web.exposu'"
+  },
+  {
+    "name": "\nspring.application.nam",
+    "type": "java.lang.String",
+    "description": "A description for '\nspring.application.nam'"
+  },
+  {
+    "name": "=\nspring.datasource.u",
+    "type": "java.lang.String",
+    "description": "A description for '=\nspring.datasource.u'"
+  },
+  {
+    "name": "\nserver.por",
+    "type": "java.lang.String",
+    "description": "A description for '\nserver.por'"
+  },
+  {
+    "name": "p\nspring.datasource.userna",
+    "type": "java.lang.String",
+    "description": "A description for 'p\nspring.datasource.userna'"
+  },
+  {
+    "name": "p\nspring.datasource.userna",
+    "type": "java.lang.String",
+    "description": "A description for 'p\nspring.datasource.userna'"
+  },
+  {
+    "name": "t\nspring.datasource.driver-class-na",
+    "type": "java.lang.String",
+    "description": "A description for 't\nspring.datasource.driver-class-na'"
+  },
+  {
+    "name": "t\nspring.datasource.driver-class-na",
+    "type": "java.lang.String",
+    "description": "A description for 't\nspring.datasource.driver-class-na'"
+  },
+  {
+    "name": "r\nspring.datasource.hikari.maximum-pool-si",
+    "type": "java.lang.String",
+    "description": "A description for 'r\nspring.datasource.hikari.maximum-pool-si'"
+  },
+  {
+    "name": "0\nspring.datasource.hikari.connection-timeo",
+    "type": "java.lang.String",
+    "description": "A description for '0\nspring.datasource.hikari.connection-timeo'"
+  },
+  {
+    "name": "0\nspring.datasource.hikari.max-lifeti",
+    "type": "java.lang.String",
+    "description": "A description for '0\nspring.datasource.hikari.max-lifeti'"
+  },
+  {
+    "name": "n\nspring.datasource.passwo",
+    "type": "java.lang.String",
+    "description": "A description for 'n\nspring.datasource.passwo'"
+  },
+  {
+    "name": "e=8\nspring.data.redis.lettuce.pool.max-",
+    "type": "java.lang.String",
+    "description": "A description for 'e=8\nspring.data.redis.lettuce.pool.max-'"
+  },
+  {
+    "name": "are/tessdata\ninv",
+    "type": "java.lang.String",
+    "description": "A description for 'are/tessdata\ninv'"
+  },
+  {
+    "name": "are/tessdata\ninv",
+    "type": "java.lang.String",
+    "description": "A description for 'are/tessdata\ninv'"
+  }
+]}
