@@ -109,8 +109,12 @@ public class OrganizationService implements OrganizationUseCase {
                         existing.setDescription(details.getDescription());
                     if (details.getEmail() != null)
                         existing.setEmail(details.getEmail());
+                    if (details.getServiceType() != null)
+                        existing.setServiceType(details.getServiceType());
                     if (details.getLogoUri() != null)
                         existing.setLogoUri(details.getLogoUri());
+                    if (details.getLogoId() != null)
+                        existing.setLogoId(details.getLogoId());
                     if (details.getTaxNumber() != null)
                         existing.setTaxNumber(details.getTaxNumber());
 

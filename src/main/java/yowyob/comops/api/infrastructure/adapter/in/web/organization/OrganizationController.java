@@ -37,6 +37,8 @@ public class OrganizationController {
                 .serviceType(request.getServiceType())
                 .email(request.getEmail())
                 .description(request.getDescription())
+                .logoUri(request.getLogoUri())
+                .logoId(request.getLogoId())
                 .build();
 
         return securityUtils.getCurrentUser()
@@ -77,6 +79,8 @@ public class OrganizationController {
                 .serviceType(request.getServiceType())
                 .email(request.getEmail())
                 .description(request.getDescription())
+                .logoUri(request.getLogoUri())
+                .logoId(request.getLogoId())
                 .build();
 
         return securityUtils.getCurrentUser()
@@ -103,5 +107,9 @@ public class OrganizationController {
         private String email;
         @Schema(description = "Description courte de l'activité")
         private String description;
+        @Schema(description = "URL publique du logo de l'organisation", example = "/files/4de2dc31-25ab-4e2a-bf9d-11ac46014e8d")
+        private String logoUri;
+        @Schema(description = "Identifiant du fichier logo stocké", example = "4de2dc31-25ab-4e2a-bf9d-11ac46014e8d")
+        private UUID logoId;
     }
 }
